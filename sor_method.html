@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SOR Method</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #e1f5fe; /* Light blue background for the whole page */
+      color: #333;
+      line-height: 1.6;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0;
+      padding: 15px 0;
+      background-color: #007bff; /* Blue header background */
+      color: #fff; /* White text */
+      border-bottom: 5px solid #0056b3; /* Darker blue underline */
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #ffffff; /* White background for input and results sections */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    pre {
+      background: #f9f9f9;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    #chart-container {
+      margin-top: 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .result-section {
+      background-color: #f1f8ff; /* Light blue for the result section */
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <h2>SOR (Successive Over Relaxation) Method Solver</h2>
+  <div class="container">
+    <label for="matrix">Enter Coefficient Matrix (comma-separated rows):</label>
+    <input type="text" id="matrix" placeholder="e.g., 4,-1,0; -1,4,-1; 0,-1,4">
+    
+    <label for="rhs">Enter RHS Vector (comma-separated):</label>
+    <input type="text" id="rhs" placeholder="e.g., 15,10,10">
+    
+    <label for="omega">Enter Relaxation Factor (ω, 0 < ω < 2):</label>
+    <input type="number" id="omega" value="1.2" step="0.1">
+    
+    <label for="tol">Enter Tolerance (e.g., 1e-6):</label>
+    <input type="number" id="tol" value="0.000001">
+    
+    <label for="maxIter">Enter Max Iterations:</label>
+    <input type="number" id="maxIter" value="100">
+    
+    <button onclick="solveSOR()">Solve</button>
+    
+    <div id="results" class="result-section" style="display: none;">
+      <h3>Results</h3>
+      <pre id="solution"></pre>
+    </div>
+    <div id="chart-container">
+      <canvas id="errorChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function solveSOR() {
+      const matrixInput = document.getElementById('matrix').value;
+      const rhsInput = document.getElementById('rhs').value;
+      const omega = parseFloat(document.getElementById('omega').value);
+      const tol = parseFloat(document.getElementById('tol').value);
+      const maxIter = parseInt(document.getElementById('maxIter').value);
+
+      // Parse inputs
+      const A = matrixInput.split(';').map(row => row.split(',').map(Number));
+      const b = rhsInput.split(',').map(Number);
+
+      const n = A.length;
+      let x = Array(n).fill(0); // Initial guess
+      let errors = [];
+      let iteration = 0;
+
+      while (iteration < maxIter) {
+        iteration++;
+        let xOld = [...x];
+
+        for (let i = 0; i < n; i++) {
+          let sum = 0;
+          for (let j = 0; j < n; j++) {
+            if (j !== i) sum += A[i][j] * x[j];
+          }
+          x[i] = (1 - omega) * x[i] + (omega * (b[i] - sum)) / A[i][i];
+        }
+
+        // Compute relative error
+        const relativeError = Math.max(...x.map((xi, i) => Math.abs((xi - xOld[i]) / xi || 0)));
+        errors.push(relativeError);
+
+        // Check for convergence
+        if (relativeError < tol) break;
+      }
+
+      // Display results
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('solution').innerText = `
+        Solution: ${x.map(val => val.toFixed(6)).join(', ')}
+        Iterations: ${iteration}
+        Converged: ${errors[errors.length - 1] < tol ? 'Yes' : 'No'}
+      `;
+
+      // Plot error graph
+      const ctx = document.getElementById('errorChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: errors.map((_, i) => i + 1),
+          datasets: [{
+            label: 'Relative Error',
+            data: errors,
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderWidth: 2,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { title: { display: true, text: 'Iteration' } },
+            y: { title: { display: true, text: 'Relative Error' } },
+          }
+        }
+      });
+    }
+  </script>
+</body>
+</html>

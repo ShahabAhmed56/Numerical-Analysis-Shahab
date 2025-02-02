@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Graphical Method - Custom Equation</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #e1f5fe;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0;
+      padding: 15px 0;
+      background-color: #007bff;
+      color: #fff;
+      border-bottom: 5px solid #0056b3;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    #chart-container {
+      margin-top: 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .result-section {
+      background-color: #f1f8ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Graphical Method - Custom Equation</h2>
+
+  <div class="container">
+    <label for="equation">Enter the equation (e.g., Math.sin(x), x*x, Math.exp(-x)): </label>
+    <input type="text" id="equation" value="Math.sin(x)">
+    
+    <label for="xMin">Enter the minimum x value (e.g., 0): </label>
+    <input type="number" id="xMin" value="0">
+    
+    <label for="xMax">Enter the maximum x value (e.g., 6.28 for 2π): </label>
+    <input type="number" id="xMax" value="6.28">
+    
+    <label for="stepSize">Enter the step size for plotting (e.g., 0.1): </label>
+    <input type="number" id="stepSize" value="0.1" step="any">
+    
+    <button onclick="plotGraph()">Plot Graph</button>
+
+    <div class="result-section">
+      <h3>Graph of y = f(x)</h3>
+      <p>The graph will display the custom equation and mark the roots (x-intercepts) with circles.</p>
+    </div>
+
+    <div id="chart-container">
+      <canvas id="functionChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function plotGraph() {
+      // Get input values
+      const equation = document.getElementById('equation').value;
+      const xMin = parseFloat(document.getElementById('xMin').value);
+      const xMax = parseFloat(document.getElementById('xMax').value);
+      const stepSize = parseFloat(document.getElementById('stepSize').value);
+
+      const xData = [];
+      const yData = [];
+      const rootX = [];
+      const rootY = [];
+
+      // Evaluate the function for each x value
+      for (let x = xMin; x <= xMax; x += stepSize) {
+        try {
+          const y = eval(equation); // Evaluate the user-entered equation
+          xData.push(x);
+          yData.push(y);
+
+          // Identify roots
+          if (Math.abs(y) < 1e-5) {
+            rootX.push(x);
+            rootY.push(0); // y-value is zero for roots
+          }
+        } catch (error) {
+          alert('Error in evaluating the equation. Please enter a valid JavaScript mathematical expression.');
+          return;
+        }
+      }
+
+      // Graph data
+      const graphData = {
+        labels: xData,
+        datasets: [
+          {
+            label: `y = ${equation}`,
+            data: yData,
+            borderColor: '#ff5733',
+            backgroundColor: 'rgba(255, 87, 51, 0.2)',
+            fill: true,
+            borderWidth: 2,
+          },
+          {
+            label: 'Roots (x-intercepts)',
+            data: rootX.map((x, index) => ({ x, y: rootY[index] })), // Only roots
+            backgroundColor: '#33b5ff',
+            pointStyle: 'circle',
+            pointRadius: 6,
+            showLine: false, // Only show points, not a line
+          },
+        ],
+      };
+
+      // Plot the graph
+      const ctx = document.getElementById('functionChart').getContext('2d');
+      new Chart(ctx, {
+        type: 'scatter',
+        data: graphData,
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'x',
+              },
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'y',
+              },
+            },
+          },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            },
+          },
+        },
+      });
+    }
+  </script>
+</body>
+</html>

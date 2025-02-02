@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cramer's Rule Solver (3x3) with Graph</title>
+    <script src="https://cdn.plot.ly/plotly-2.24.2.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        textarea, input, button {
+            margin-top: 5px;
+            padding: 10px;
+            width: 100%;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #plot-container {
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Cramer's Rule Solver (3x3) with Graph</h1>
+
+    <label for="matrixA">Enter Matrix A (comma-separated rows, 3x3):</label>
+    <textarea id="matrixA" rows="5" placeholder="Example: 2,1,-1\n-3,-1,2\n-2,1,2"></textarea>
+
+    <label for="matrixB">Enter Matrix B (column vector):</label>
+    <textarea id="matrixB" rows="3" placeholder="Example: 8\n-11\n-3"></textarea>
+
+    <button onclick="solveCramer()">Solve</button>
+
+    <h2>Solution:</h2>
+    <pre id="output"></pre>
+
+    <div id="plot-container">
+        <div id="graph"></div>
+    </div>
+
+    <script>
+        function solveCramer() {
+            const output = document.getElementById('output');
+            const matrixAInput = document.getElementById('matrixA').value;
+            const matrixBInput = document.getElementById('matrixB').value;
+
+            try {
+                // Parse inputs
+                const matrixA = matrixAInput.split('\n').map(row => row.split(',').map(Number));
+                const matrixB = matrixBInput.split('\n').map(Number);
+
+                if (matrixA.length !== 3 || matrixA[0].length !== 3 || matrixB.length !== 3) {
+                    throw new Error('Please enter a 3x3 matrix and a 3x1 column vector.');
+                }
+
+                const determinant = (matrix) => {
+                    return (
+                        matrix[0][0] * (matrix[1][1] * matrix[2][2] - matrix[1][2] * matrix[2][1]) -
+                        matrix[0][1] * (matrix[1][0] * matrix[2][2] - matrix[1][2] * matrix[2][0]) +
+                        matrix[0][2] * (matrix[1][0] * matrix[2][1] - matrix[1][1] * matrix[2][0])
+                    );
+                };
+
+                const replaceColumn = (matrix, columnIndex, columnValues) => {
+                    return matrix.map((row, i) =>
+                        row.map((val, j) => (j === columnIndex ? columnValues[i] : val))
+                    );
+                };
+
+                const detA = determinant(matrixA);
+                if (detA === 0) {
+                    throw new Error('Matrix A determinant is zero. No unique solution exists.');
+                }
+
+                const detX = determinant(replaceColumn(matrixA, 0, matrixB));
+                const detY = determinant(replaceColumn(matrixA, 1, matrixB));
+                const detZ = determinant(replaceColumn(matrixA, 2, matrixB));
+
+                const x = detX / detA;
+                const y = detY / detA;
+                const z = detZ / detA;
+
+                output.textContent = `Solution:\nx = ${x.toFixed(4)}\ny = ${y.toFixed(4)}\nz = ${z.toFixed(4)}`;
+
+                // Plot the planes and intersection
+                plotGraph(matrixA, matrixB, x, y, z);
+
+            } catch (error) {
+                output.textContent = `Error: ${error.message}`;
+            }
+        }
+
+        function plotGraph(matrixA, matrixB, x, y, z) {
+            const [a1, b1, c1] = matrixA[0];
+            const [a2, b2, c2] = matrixA[1];
+            const [a3, b3, c3] = matrixA[2];
+
+            const d1 = matrixB[0];
+            const d2 = matrixB[1];
+            const d3 = matrixB[2];
+
+            const range = Array.from({ length: 10 }, (_, i) => i - 5); // Generate range [-5, 5]
+
+            const plane1 = range.map(x => range.map(y => (d1 - a1 * x - b1 * y) / c1));
+            const plane2 = range.map(x => range.map(y => (d2 - a2 * x - b2 * y) / c2));
+            const plane3 = range.map(x => range.map(y => (d3 - a3 * x - b3 * y) / c3));
+
+            const layout = {
+                title: '3D Visualization of Planes',
+                scene: {
+                    xaxis: { title: 'X-axis' },
+                    yaxis: { title: 'Y-axis' },
+                    zaxis: { title: 'Z-axis' },
+                },
+            };
+
+            const data = [
+                {
+                    type: 'surface',
+                    z: plane1,
+                    x: range,
+                    y: range,
+                    name: 'Plane 1',
+                    opacity: 0.7,
+                },
+                {
+                    type: 'surface',
+                    z: plane2,
+                    x: range,
+                    y: range,
+                    name: 'Plane 2',
+                    opacity: 0.7,
+                },
+                {
+                    type: 'surface',
+                    z: plane3,
+                    x: range,
+                    y: range,
+                    name: 'Plane 3',
+                    opacity: 0.7,
+                },
+                {
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    x: [x],
+                    y: [y],
+                    z: [z],
+                    marker: { color: 'red', size: 6 },
+                    name: 'Solution',
+                },
+            ];
+
+            Plotly.newPlot('graph', data, layout);
+        }
+    </script>
+</body>
+</html>

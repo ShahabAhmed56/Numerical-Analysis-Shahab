@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heun's Method for Solving ODEs</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1, h2 {
+            color: #2c3e50;
+        }
+        p {
+            color: #555;
+            line-height: 1.6;
+        }
+        .button {
+            display: block;
+            width: 95%;
+            padding: 20px;
+            margin: 10px 0;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s, transform 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
+        #chart-container {
+            width: 80%;
+            margin: 20px auto;
+        }
+        .input-container {
+            margin: 20px;
+        }
+        label {
+            display: block;
+            margin: 5px 0;
+        }
+        input {
+            padding: 10px;
+            margin: 10px 0;
+            width: 50%;
+        }
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: center;
+        }
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Heun's Method for Solving ODEs</h1>
+    <h2>Enter the parameters for Heun's Method:</h2>
+
+    <div class="input-container">
+        <label for="function">Function (in terms of x and y):</label>
+        <input type="text" id="function" value="4 * Math.exp(0.8 * x) - 0.5 * y">
+
+        <label for="y0">Initial y-value (y0):</label>
+        <input type="number" id="y0" value="1">
+
+        <label for="x0">Initial x-value (x0):</label>
+        <input type="number" id="x0" value="0">
+
+        <label for="h">Step size (h):</label>
+        <input type="number" id="h" value="0.1">
+
+        <label for="n">Number of steps (n):</label>
+        <input type="number" id="n" value="20">
+
+        <button class="button" onclick="solveODE()">Solve with Heun's Method</button>
+    </div>
+
+    <div id="chart-container">
+        <canvas id="heunChart"></canvas>
+    </div>
+
+    <div id="results">
+        <h2>Iteration Results and Error</h2>
+        <table id="results-table">
+            <thead>
+                <tr>
+                    <th>Iteration</th>
+                    <th>x</th>
+                    <th>Heun's y</th>
+                    <th>Exact y</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Rows will be populated dynamically -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // Function to parse and evaluate the user input
+        function parseFunction(func) {
+            // Return a new function for evaluating the ODE: f(x, y)
+            return new Function("x", "y", "return " + func);
+        }
+
+        // Exact solution for comparison (you can modify this based on your ODE)
+        function exactSolution(x) {
+            return (4 / 1.3) * (Math.exp(0.8 * x) - Math.exp(-0.5 * x)) + 1 * Math.exp(-0.5 * x);
+        }
+
+        // Heun's Method solver
+        function heunsMethod(f, y0, x0, h, n) {
+            let x = x0;
+            let y = y0;
+            let xValues = [x];
+            let yValues = [y];
+            let exactYValues = [exactSolution(x)];
+            let errors = [Math.abs(y - exactSolution(x))];
+
+            for (let i = 0; i < n; i++) {
+                // Predictor step (Euler's)
+                let y_predictor = y + h * f(x, y);
+
+                // Corrector step
+                let y_corrector = y + h * 0.5 * (f(x, y) + f(x + h, y_predictor));
+
+                // Update y with corrector value
+                y = y_corrector;
+                x = x + h; // Move to the next x
+
+                // Store values
+                xValues.push(x);
+                yValues.push(y);
+                exactYValues.push(exactSolution(x));
+                errors.push(Math.abs(y - exactSolution(x)));
+            }
+
+            return { xValues, yValues, exactYValues, errors };
+        }
+
+        // Function to solve the ODE
+        function solveODE() {
+            // Get inputs from the user
+            const func = document.getElementById('function').value; // Function string
+            const y0 = parseFloat(document.getElementById('y0').value);
+            const x0 = parseFloat(document.getElementById('x0').value);
+            const h = parseFloat(document.getElementById('h').value);
+            const n = parseInt(document.getElementById('n').value);
+
+            // Parse the function to make it executable
+            const f = parseFunction(func);
+
+            // Call Heun's Method to get the solution
+            const { xValues, yValues, exactYValues, errors } = heunsMethod(f, y0, x0, h, n);
+
+            // Display results in the table
+            const tableBody = document.querySelector("#results-table tbody");
+            tableBody.innerHTML = ""; // Clear previous results
+            for (let i = 0; i <= n; i++) {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${i}</td>
+                    <td>${xValues[i].toFixed(4)}</td>
+                    <td>${yValues[i].toFixed(4)}</td>
+                    <td>${exactYValues[i].toFixed(4)}</td>
+                    <td>${errors[i].toFixed(4)}</td>
+                `;
+                tableBody.appendChild(row);
+            }
+
+            // Plotting with Chart.js
+            const ctx = document.getElementById('heunChart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        {
+                            label: "Heun's Method Approximation",
+                            data: yValues,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            fill: false,
+                            tension: 0.4
+                        },
+                        {
+                            label: "Exact Solution",
+                            data: exactYValues,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                            fill: false,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Heun’s Method vs Exact Solution'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': y = ' + context.raw.toFixed(4);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'x'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'y'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

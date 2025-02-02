@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gaussian Elimination with Partial Pivoting</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #e1f5fe;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0;
+      padding: 15px 0;
+      background-color: #007bff;
+      color: #fff;
+      border-bottom: 5px solid #0056b3;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    pre {
+      background: #f9f9f9;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .result-section {
+      background-color: #f1f8ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Gaussian Elimination with Partial Pivoting</h2>
+  <div class="container">
+    <form id="pivotingForm">
+      <label for="matrixA">Enter Matrix A (3x3, comma-separated rows):</label>
+      <input type="text" id="matrixA" placeholder="e.g., 2,1,-1; -3,-1,2; -2,1,2" required>
+
+      <label for="constants">Enter Constants (B column, comma-separated):</label>
+      <input type="text" id="constants" placeholder="e.g., 8, -11, -3" required>
+
+      <button type="submit">Solve</button>
+    </form>
+
+    <div class="result-section" id="resultSection" style="display: none;">
+      <h3>Results</h3>
+      <pre id="resultOutput"></pre>
+      <canvas id="resultChart" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function parseMatrix(input) {
+      return input.split(";").map(row => row.split(",").map(Number));
+    }
+
+    function partialPivot(matrixA, constants) {
+      const n = matrixA.length;
+
+      // Augment matrix with constants column
+      for (let i = 0; i < n; i++) {
+        matrixA[i].push(constants[i]);
+      }
+
+      // Forward elimination with partial pivoting
+      for (let i = 0; i < n; i++) {
+        // Pivot: Swap rows to place the largest element in the pivot position
+        let maxRow = i;
+        for (let k = i + 1; k < n; k++) {
+          if (Math.abs(matrixA[k][i]) > Math.abs(matrixA[maxRow][i])) {
+            maxRow = k;
+          }
+        }
+        [matrixA[i], matrixA[maxRow]] = [matrixA[maxRow], matrixA[i]]; // Swap rows
+
+        // Make all elements below the pivot 0
+        for (let j = i + 1; j < n; j++) {
+          const factor = matrixA[j][i] / matrixA[i][i];
+          for (let k = i; k <= n; k++) {
+            matrixA[j][k] -= factor * matrixA[i][k];
+          }
+        }
+      }
+
+      // Back substitution to solve for variables
+      const solutions = new Array(n).fill(0);
+      for (let i = n - 1; i >= 0; i--) {
+        solutions[i] = matrixA[i][n] / matrixA[i][i];
+        for (let j = i - 1; j >= 0; j--) {
+          matrixA[j][n] -= matrixA[j][i] * solutions[i];
+        }
+      }
+
+      return solutions;
+    }
+
+    function plotResults(variables) {
+      const ctx = document.getElementById("resultChart").getContext("2d");
+      new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: ["X", "Y", "Z"],
+          datasets: [{
+            label: "Solution Values",
+            data: variables,
+            backgroundColor: ["#007bff", "#28a745", "#ffc107"],
+            borderColor: ["#0056b3", "#218838", "#d39e00"],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById("pivotingForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const matrixAInput = document.getElementById("matrixA").value.trim();
+      const constantsInput = document.getElementById("constants").value.trim();
+      const resultOutput = document.getElementById("resultOutput");
+      const resultSection = document.getElementById("resultSection");
+
+      try {
+        const matrixA = parseMatrix(matrixAInput);
+        const constants = constantsInput.split(",").map(Number);
+
+        if (matrixA.length !== 3 || matrixA.some(row => row.length !== 3)) {
+          throw new Error("Matrix A must be 3x3.");
+        }
+        if (constants.length !== 3) {
+          throw new Error("Constants vector must have 3 elements.");
+        }
+
+        const solutions = partialPivot(matrixA, constants);
+        resultOutput.textContent = `Solution:\nX = ${solutions[0]}\nY = ${solutions[1]}\nZ = ${solutions[2]}`;
+        resultSection.style.display = "block";
+
+        // Plot results
+        plotResults(solutions);
+      } catch (error) {
+        resultOutput.textContent = `Error: ${error.message}`;
+        resultSection.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

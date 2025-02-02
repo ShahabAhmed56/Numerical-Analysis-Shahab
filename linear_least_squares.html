@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Least Squares Method (Regression Method)</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .input-container {
+            margin-bottom: 20px;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .button:hover {
+            background-color: #0056b3;
+        }
+        table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+        #myChart {
+            width: 100%;
+            height: 400px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Linear Least Squares Method (Regression Method)</h1>
+
+    <div class="input-container">
+        <label for="x-values">Enter x values (comma separated):</label><br>
+        <input type="text" id="x-values" placeholder="e.g. 1, 2, 3, 4" size="50"><br>
+        <label for="y-values">Enter y values (comma separated):</label><br>
+        <input type="text" id="y-values" placeholder="e.g. 2, 3, 5, 7" size="50"><br>
+        <button class="button" onclick="calculateRegression()">Calculate Regression</button>
+    </div>
+
+    <h2>Results:</h2>
+    <div id="output"></div>
+
+    <div id="chart-container">
+        <canvas id="myChart"></canvas>
+    </div>
+
+    <script>
+        function calculateRegression() {
+            // Get input values
+            let xValues = document.getElementById('x-values').value.split(',').map(Number);
+            let yValues = document.getElementById('y-values').value.split(',').map(Number);
+
+            // Check for equal lengths of x and y values
+            if (xValues.length !== yValues.length) {
+                alert("x and y values must have the same number of elements.");
+                return;
+            }
+
+            let n = xValues.length;
+
+            // Calculate sums
+            let sumX = xValues.reduce((a, b) => a + b, 0);
+            let sumY = yValues.reduce((a, b) => a + b, 0);
+            let sumXY = 0;
+            let sumX2 = 0;
+
+            for (let i = 0; i < n; i++) {
+                sumXY += xValues[i] * yValues[i];
+                sumX2 += xValues[i] * xValues[i];
+            }
+
+            // Calculate coefficients (m and b) for the equation y = mx + b
+            let m = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+            let b = (sumY - m * sumX) / n;
+
+            // Display results
+            let output = `
+                <p>Linear Regression Equation: y = ${m.toFixed(4)}x + ${b.toFixed(4)}</p>
+                <h3>Table of Results:</h3>
+                <table>
+                    <tr>
+                        <th>x</th>
+                        <th>y</th>
+                        <th>Predicted y (ŷ)</th>
+                    </tr>
+            `;
+
+            let predictedYValues = [];
+            for (let i = 0; i < n; i++) {
+                let predictedY = m * xValues[i] + b;
+                predictedYValues.push(predictedY);
+                output += `
+                    <tr>
+                        <td>${xValues[i]}</td>
+                        <td>${yValues[i]}</td>
+                        <td>${predictedY.toFixed(4)}</td>
+                    </tr>
+                `;
+            }
+
+            output += '</table>';
+            document.getElementById('output').innerHTML = output;
+
+            // Create the plot
+            createPlot(xValues, yValues, predictedYValues);
+        }
+
+        function createPlot(xValues, yValues, predictedYValues) {
+            var ctx = document.getElementById('myChart').getContext('2d');
+
+            // Creating the chart
+            new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Data Points',
+                            data: xValues.map((x, index) => ({x: x, y: yValues[index]})),
+                            backgroundColor: 'blue',
+                            borderColor: 'blue',
+                            borderWidth: 1,
+                            pointRadius: 5
+                        },
+                        {
+                            label: 'Regression Line',
+                            data: xValues.map((x, index) => ({x: x, y: predictedYValues[index]})),
+                            type: 'line',
+                            borderColor: 'red',
+                            fill: false,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            position: 'bottom'
+                        }
+                    },
+                    responsive: true
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newton-Raphson Method</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.9.0/math.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #eaf4fc; /* Light blue background for the entire page */
+            color: #333;
+            line-height: 1.6;
+        }
+        h2 {
+            text-align: center;
+            margin: 0;
+            padding: 15px 0;
+            background-color: #007bff; /* Blue header background */
+            color: #fff; /* White text */
+            border-bottom: 5px solid #0056b3; /* Darker blue underline */
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff; /* White background for input and results sections */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #chart-container {
+            margin-top: 20px;
+        }
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Newton-Raphson Method Calculator</h2>
+    <div class="container">
+        <form id="nrForm">
+            <label for="function">Enter f(x):</label>
+            <input type="text" id="function" placeholder="e.g., x^10 - 1" required>
+
+            <label for="derivative">Enter f'(x):</label>
+            <input type="text" id="derivative" placeholder="e.g., 10*x^9" required>
+
+            <label for="initialGuess">Enter Initial Guess (x0):</label>
+            <input type="number" id="initialGuess" placeholder="e.g., 1.5" required>
+
+            <label for="iterations">Enter Max Iterations:</label>
+            <input type="number" id="iterations" placeholder="e.g., 10" required>
+
+            <label for="tolerance">Enter Tolerance:</label>
+            <input type="number" id="tolerance" placeholder="e.g., 0.0001" step="0.0001" required>
+
+            <button type="button" onclick="newtonRaphson()">Calculate</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h3>Results:</h3>
+        <pre id="results">Results will be displayed here...</pre>
+    </div>
+
+    <div class="container" id="chart-container">
+        <h3>Graph of f(x):</h3>
+        <canvas id="graph"></canvas>
+    </div>
+
+    <script>
+        function newtonRaphson() {
+            // Get inputs
+            const funcInput = document.getElementById("function").value;
+            const derivativeInput = document.getElementById("derivative").value;
+            const x0 = parseFloat(document.getElementById("initialGuess").value);
+            const maxIterations = parseInt(document.getElementById("iterations").value);
+            const tolerance = parseFloat(document.getElementById("tolerance").value);
+
+            // Parse the functions
+            const f = math.parse(funcInput).compile();
+            
+            const df = math.parse(derivativeInput).compile();
+            let x = x0; // Initial guess
+            let results = `  itr   root       error(%)\n`;
+            let prevX = x0;
+            let error = 100;
+
+            const roots = [x0]; // Track root approximations for graphing
+
+            for (let i = 1; i <= maxIterations; i++) {
+                // Evaluate f(x) and f'(x)
+                const fx = f.evaluate({ x });
+                const dfx = df.evaluate({ x });
+
+                if (dfx === 0) {
+                    results += `Derivative is zero. Stopping iteration to avoid division by zero.\n`;
+                    break;
+                }
+
+                // Update x using Newton-Raphson formula
+                x = x - fx / dfx;
+                roots.push(x);
+
+                // Calculate error
+                error = Math.abs((x - prevX) / x) * 100;
+
+                // Log the result
+                results += `${i.toString().padStart(4)}  ${x.toFixed(6)}  ${error.toFixed(6)}\n`;
+
+                // Break if within tolerance
+                if (error < tolerance) {
+                    results += `\nConverged to the root within tolerance.\n`;
+                    break;
+                }
+
+                prevX = x;
+            }
+
+            if (error >= tolerance) {
+                results += `\nDid not converge within the maximum number of iterations.\n`;
+            }
+
+            // Display results
+            document.getElementById("results").textContent = results;
+
+            // Generate the graph
+            plotGraph(f, roots);
+        }
+
+        function plotGraph(f, roots) {
+            const canvas = document.getElementById("graph");
+            const ctx = canvas.getContext("2d");
+
+            // Clear the previous graph
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const xValues = [];
+            const yValues = [];
+            const xRange = [-5, 5];
+            const step = 0.1;
+
+            for (let x = xRange[0]; x <= xRange[1]; x += step) {
+                xValues.push(x);
+                yValues.push(f.evaluate({ x }));
+            }
+
+            const rootApprox = roots[roots.length - 1];
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        {
+                            label: "f(x)",
+                            data: yValues,
+                            borderColor: "#007bff",
+                            borderWidth: 2,
+                            fill: false,
+                        },
+                        {
+                            label: "Root Approximation",
+                            data: xValues.map((x) =>
+                                x === rootApprox ? f.evaluate({ x }) : null
+                            ),
+                            pointBackgroundColor: "red",
+                            pointRadius: 6,
+                            type: "scatter",
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "x",
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "f(x)",
+                            },
+                        },
+                    },
+                },
+            });
+        }
+    </script>
+</body>
+</html>

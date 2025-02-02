@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secant Method Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.9.0/math.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f3f4f6; /* Light gray background */
+            color: #333;
+            line-height: 1.6;
+        }
+        h2 {
+            text-align: center;
+            margin: 0;
+            padding: 15px 0;
+            background-color: #28a745; /* Green header background */
+            color: #fff; /* White text */
+            border-bottom: 5px solid #218838; /* Darker green underline */
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #ffffff; /* White background for input and results sections */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-top: 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        pre {
+            background: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #chart-container {
+            margin-top: 20px;
+        }
+        canvas {
+            max-width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h2>Secant Method Calculator</h2>
+    <div class="container">
+        <form id="secantForm">
+            <label for="function">Enter f(x):</label>
+            <input type="text" id="function" placeholder="e.g., x^10 - 1" required>
+
+            <label for="x0">Enter First Guess (x0):</label>
+            <input type="number" id="x0" placeholder="e.g., 1.5" required>
+
+            <label for="x1">Enter Second Guess (x1):</label>
+            <input type="number" id="x1" placeholder="e.g., 2.0" required>
+
+            <label for="iterations">Enter Max Iterations:</label>
+            <input type="number" id="iterations" placeholder="e.g., 10" required>
+
+            <label for="tolerance">Enter Tolerance:</label>
+            <input type="number" id="tolerance" placeholder="e.g., 0.0001" step="0.0001" required>
+
+            <button type="button" onclick="secantMethod()">Calculate</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <h3>Results:</h3>
+        <pre id="results">Results will be displayed here...</pre>
+    </div>
+
+    <div class="container" id="chart-container">
+        <h3>Graph of f(x):</h3>
+        <canvas id="graph"></canvas>
+    </div>
+
+    <script>
+        function secantMethod() {
+            // Get inputs
+            const funcInput = document.getElementById("function").value;
+            const x0 = parseFloat(document.getElementById("x0").value);
+            const x1 = parseFloat(document.getElementById("x1").value);
+            const maxIterations = parseInt(document.getElementById("iterations").value);
+            const tolerance = parseFloat(document.getElementById("tolerance").value);
+
+            // Parse the function
+            const f = math.parse(funcInput).compile();
+            let xPrev = x0; // First guess
+            let xCurr = x1; // Second guess
+            let results = `  itr   root       error(%)\n`;
+            let error = 100;
+
+            const roots = [xPrev, xCurr]; // Track root approximations for graphing
+
+            for (let i = 1; i <= maxIterations; i++) {
+                // Evaluate f(x) at xPrev and xCurr
+                const fPrev = f.evaluate({ x: xPrev });
+                const fCurr = f.evaluate({ x: xCurr });
+
+                if (fCurr - fPrev === 0) {
+                    results += `Division by zero encountered. Stopping iteration.\n`;
+                    break;
+                }
+
+                // Update x using the Secant formula
+                const xNext = xCurr - (fCurr * (xCurr - xPrev)) / (fCurr - fPrev);
+                roots.push(xNext);
+
+                // Calculate error
+                error = Math.abs((xNext - xCurr) / xNext) * 100;
+
+                // Log the result
+                results += `${i.toString().padStart(4)}  ${xNext.toFixed(6)}  ${error.toFixed(6)}\n`;
+
+                // Break if within tolerance
+                if (error < tolerance) {
+                    results += `\nConverged to the root within tolerance.\n`;
+                    break;
+                }
+
+                xPrev = xCurr;
+                xCurr = xNext;
+            }
+
+            if (error >= tolerance) {
+                results += `\nDid not converge within the maximum number of iterations.\n`;
+            }
+
+            // Display results
+            document.getElementById("results").textContent = results;
+
+            // Generate the graph
+            plotGraph(f, roots);
+        }
+
+        function plotGraph(f, roots) {
+            const canvas = document.getElementById("graph");
+            const ctx = canvas.getContext("2d");
+
+            // Clear the previous graph
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const xValues = [];
+            const yValues = [];
+            const xRange = [-5, 5];
+            const step = 0.1;
+
+            for (let x = xRange[0]; x <= xRange[1]; x += step) {
+                xValues.push(x);
+                yValues.push(f.evaluate({ x }));
+            }
+
+            const rootApprox = roots[roots.length - 1];
+
+            new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: xValues,
+                    datasets: [
+                        {
+                            label: "f(x)",
+                            data: yValues,
+                            borderColor: "#28a745",
+                            borderWidth: 2,
+                            fill: false,
+                        },
+                        {
+                            label: "Root Approximations",
+                            data: roots.map((root) => ({
+                                x: root,
+                                y: f.evaluate({ x: root }),
+                            })),
+                            pointBackgroundColor: "red",
+                            pointRadius: 6,
+                            type: "scatter",
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: "x",
+                            },
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: "f(x)",
+                            },
+                        },
+                    },
+                },
+            });
+        }
+    </script>
+</body>
+</html>

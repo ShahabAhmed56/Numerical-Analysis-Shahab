@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fixed Point Iteration Method</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #e1f5fe; /* Light blue background for the whole page */
+      color: #333;
+      line-height: 1.6;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0;
+      padding: 15px 0;
+      background-color: #007bff; /* Blue header background */
+      color: #fff; /* White text */
+      border-bottom: 5px solid #0056b3; /* Darker blue underline */
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #ffffff; /* White background for input and results sections */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    pre {
+      background: #f9f9f9;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    #chart-container {
+      margin-top: 20px;
+    }
+
+    canvas {
+      max-width: 100%;
+    }
+
+    .result-section {
+      background-color: #f1f8ff; /* Light blue for the result section */
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+  </style>
+</head>
+<body>
+  <h2>Fixed Point Iteration Method</h2>
+
+  <div class="container">
+    <label for="functionInput">Enter the function g(x) (e.g., x - (x^2 - 4) / 2): </label>
+    <input type="text" id="functionInput" placeholder="g(x)">
+    
+    <label for="initialGuess">Enter the initial guess (x0): </label>
+    <input type="number" id="initialGuess" placeholder="x0" step="any">
+    
+    <label for="maxIter">Enter maximum iterations: </label>
+    <input type="number" id="maxIter" value="10">
+    
+    <label for="tol">Enter tolerance (e.g., 1e-6): </label>
+    <input type="number" id="tol" value="0.000001" step="any">
+    
+    <button onclick="calculateFixedPoint()">Calculate</button>
+
+    <div class="result-section">
+      <h3>Iteration Results</h3>
+      <table id="resultTable">
+        <thead>
+          <tr>
+            <th>Iteration</th>
+            <th>x</th>
+            <th>g(x)</th>
+            <th>Error</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Results will be appended here -->
+        </tbody>
+      </table>
+    </div>
+
+    <div id="chart-container">
+      <canvas id="functionChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function calculateFixedPoint() {
+      // Get input values
+      const funcStr = document.getElementById('functionInput').value;
+      const x0 = parseFloat(document.getElementById('initialGuess').value);
+      const maxIter = parseInt(document.getElementById('maxIter').value);
+      const tol = parseFloat(document.getElementById('tol').value);
+      
+      // Convert the string function to a JavaScript function
+      const g = new Function('x', `return ${funcStr}`);
+
+      // Initialize variables
+      let xValue = x0;
+      let error = tol + 1; // Start with an error larger than tolerance
+      let iteration = 0;
+
+      // Get the table body element
+      const resultTable = document.getElementById('resultTable').getElementsByTagName('tbody')[0];
+      resultTable.innerHTML = ''; // Clear previous results
+
+      // Store x values for graph plotting
+      let xHistory = [];
+      let gHistory = [];
+
+      // Iteration loop
+      while (iteration < maxIter && error > tol) {
+        const g_x = g(xValue);
+
+        // Calculate error
+        error = Math.abs(g_x - xValue);
+
+        // Increment iteration
+        iteration++;
+
+        // Add result to the table
+        const row = resultTable.insertRow();
+        row.insertCell(0).innerText = iteration;
+        row.insertCell(1).innerText = xValue.toFixed(6);
+        row.insertCell(2).innerText = g_x.toFixed(6);
+        row.insertCell(3).innerText = error.toFixed(6);
+
+        // Store the points for graph
+        xHistory.push(xValue);
+        gHistory.push(g_x);
+
+        // Update values for next iteration
+        xValue = g_x;
+      }
+
+      if (iteration >= maxIter) {
+        alert("Maximum iterations reached.");
+      } else {
+        alert("Converged successfully.");
+      }
+
+      // Plot the function and iteration points
+      plotGraph(funcStr, xHistory, gHistory);
+    }
+
+    function plotGraph(funcStr, xHistory, gHistory) {
+      // Create the plot
+      const ctx = document.getElementById('functionChart').getContext('2d');
+
+      // Create function data for plotting
+      const f = new Function('x', `return ${funcStr}`);
+      const xData = [];
+      const yData = [];
+      for (let i = -10; i <= 10; i += 0.1) {
+        xData.push(i);
+        yData.push(f(i));
+      }
+
+      // Graph data
+      const graphData = {
+        labels: xData,
+        datasets: [
+          {
+            label: 'g(x)',
+            data: yData,
+            borderColor: '#ff5733',
+            backgroundColor: 'rgba(255, 87, 51, 0.2)',
+            fill: true,
+            borderWidth: 2,
+          },
+          {
+            label: 'Fixed Point Iteration Points',
+            data: gHistory,
+            borderColor: '#33b5ff',
+            backgroundColor: 'rgba(51, 181, 255, 0.3)',
+            fill: false,
+            borderWidth: 3,
+            pointRadius: 5,
+            pointBackgroundColor: '#33b5ff',
+          }
+        ]
+      };
+
+      // Plot the graph
+      new Chart(ctx, {
+        type: 'line',
+        data: graphData,
+        options: {
+          responsive: true,
+          scales: {
+            x: {
+              min: -10,
+              max: 10,
+            },
+            y: {
+              min: Math.min(...yData) - 1,
+              max: Math.max(...yData) + 1,
+            }
+          },
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Numerical Differentiation Approximations</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e9f7e9;
+            color: #2c7632;
+            font-weight: bold;
+            text-align: center;
+            border-radius: 5px;
+        }
+        canvas {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Numerical Differentiation: Forward, Backward, and Central Difference</h1>
+    <div class="container">
+        <label for="function">Function (f(x)):</label>
+        <input type="text" id="function" value="x**2 + 2*x + 1">
+
+        <label for="xValue">Point at which to differentiate (x):</label>
+        <input type="number" id="xValue" value="2">
+
+        <label for="hValue">Step size (h):</label>
+        <input type="number" id="hValue" value="0.1">
+
+        <button onclick="calculateAndPlot()">Calculate and Plot</button>
+
+        <div class="result" id="result"></div>
+
+        <canvas id="plot" width="800" height="400"></canvas>
+    </div>
+
+    <script>
+        function calculateAndPlot() {
+            const fInput = document.getElementById("function").value;
+            const x = parseFloat(document.getElementById("xValue").value);
+            const h = parseFloat(document.getElementById("hValue").value);
+            const resultDiv = document.getElementById("result");
+            const ctx = document.getElementById("plot").getContext("2d");
+
+            // Clear previous results and canvas
+            resultDiv.innerHTML = "";
+            ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+
+            try {
+                if (isNaN(x) || isNaN(h)) {
+                    throw new Error("Please enter valid numerical values for x and h.");
+                }
+
+                // Define the function f(x)
+                const f = new Function("x", `return ${fInput}`);
+
+                // Numerical Differentiation Approximations
+                const forward_diff = (f(x + h) - f(x)) / h;
+                const backward_diff = (f(x) - f(x - h)) / h;
+                const central_diff = (f(x + h) - f(x - h)) / (2 * h);
+
+                // Exact Derivative
+                const exact_derivative = 2 * x + 2; // Derivative of f(x) = x^2 + 2x + 1
+
+                // Display Results
+                resultDiv.innerHTML = `
+                    Forward Difference Approximation: <strong>${forward_diff.toFixed(4)}</strong><br>
+                    Backward Difference Approximation: <strong>${backward_diff.toFixed(4)}</strong><br>
+                    Central Difference Approximation: <strong>${central_diff.toFixed(4)}</strong><br>
+                    Exact Derivative: <strong>${exact_derivative.toFixed(4)}</strong>
+                `;
+
+                // Plotting the function
+                const xValues = [];
+                const yValues = [];
+                for (let i = x - 5; i <= x + 5; i += 0.1) {
+                    xValues.push(i);
+                    yValues.push(f(i));
+                }
+
+                const plotData = {
+                    labels: xValues.map(val => val.toFixed(2)),
+                    datasets: [
+                        {
+                            label: "f(x)",
+                            data: yValues,
+                            borderColor: "blue",
+                            fill: false,
+                        },
+                        {
+                            type: "scatter",
+                            label: "Point of Derivative (x)",
+                            data: [{ x: x, y: f(x) }],
+                            backgroundColor: "red",
+                            borderColor: "red",
+                            pointRadius: 5,
+                        },
+                    ],
+                };
+
+                new Chart(ctx, {
+                    type: "line",
+                    data: plotData,
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: "top",
+                            },
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: "x",
+                                },
+                            },
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: "f(x)",
+                                },
+                            },
+                        },
+                    },
+                });
+            } catch (error) {
+                resultDiv.innerHTML = `<span style="color: red;">${error.message}</span>`;
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chapter 1: Modeling, Simulation, and Error Analysis</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        h2 {
+            color: #16a085;
+            font-size: 2rem;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 8px;
+            border: 2px solid #16a085;
+            margin-top: 40px;
+        }
+
+        h3 {
+            color: #34495e;
+            font-size: 1.5rem;
+            margin-top: 20px;
+        }
+
+        p {
+            line-height: 1.6;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .container {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .button {
+            display: inline-block;
+            padding: 12px 20px;
+            background-color: #007bff;
+            color: white;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.3s;
+        }
+
+        .button:hover {
+            background-color: #0056b3;
+        }
+
+        .input-container {
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .input-container label {
+            font-weight: bold;
+        }
+
+        .input-container input {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+            width: 100px;
+        }
+
+        .example {
+            margin-top: 20px;
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .example p {
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        #myChart {
+            width: 100%;
+            height: 400px;
+        }
+
+        #euler-result table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        #euler-result table, #euler-result th, #euler-result td {
+            border: 1px solid #ddd;
+        }
+
+        #euler-result th, #euler-result td {
+            padding: 10px;
+            text-align: center;
+        }
+
+        .roundoff-section {
+            margin-top: 30px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .roundoff-section h3 {
+            color: #e74c3c;
+        }
+
+        .roundoff-section p {
+            font-size: 1.1rem;
+        }
+
+        .error-analysis {
+            background-color: #ecf0f1;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+    </style>
+</head>
+<body>
+    <h1>Chapter 1: Modeling, Simulation, and Error Analysis</h1>
+
+    <h2>1. Analytical Solution</h2>
+    <div class="container">
+        <p>An <strong>analytical solution</strong> is a solution to a mathematical model or equation that is derived using algebraic manipulations, calculus, and other standard mathematical techniques. It provides exact values and is typically faster and more accurate than numerical solutions when available.</p>
+
+        <h3>Example of Analytical Solution:</h3>
+        <p>For a simple linear equation: <code>y = 2x + 3</code>, we can solve for `y` analytically given any value of `x`.</p>
+    </div>
+
+    <h2>2. Numerical Solution</h2>
+    <div class="container">
+        <p>A <strong>numerical solution</strong> approximates the solution to a mathematical problem using numerical methods and algorithms. While analytical solutions provide exact results, numerical solutions can be more practical for complex or unsolvable equations.</p>
+
+        <h3>Example of Numerical Solution:</h3>
+        <p>For a given equation, we can use methods like <strong>Euler's Method</strong> or <strong>Runge-Kutta</strong> to numerically solve it. Here’s a simple example of solving the equation <code>dy/dx = x + y</code> using Euler's method.</p>
+        
+        <div class="input-container">
+            <label for="euler-x0">Enter initial x (x0):</label>
+            <input type="number" id="euler-x0" value="0"><br>
+            <label for="euler-y0">Enter initial y (y0):</label>
+            <input type="number" id="euler-y0" value="1"><br>
+            <label for="euler-h">Enter step size (h):</label>
+            <input type="number" id="euler-h" value="0.1"><br>
+            <label for="euler-xmax">Enter max x (xmax):</label>
+            <input type="number" id="euler-xmax" value="2"><br>
+            <button class="button" onclick="solveEuler()">Solve with Euler's Method</button>
+        </div>
+
+        <h3>Numerical Result:</h3>
+        <div id="euler-result"></div>
+
+        <canvas id="euler-chart"></canvas>
+    </div>
+
+    <h2>3. Error Analysis</h2>
+    <div class="error-analysis">
+        <p><strong>Error analysis</strong> involves studying the errors that arise when solving problems numerically. Errors can result from approximations, truncations, or limitations in the methods used.</p>
+
+        <h3>Types of Errors:</h3>
+        <ul>
+            <li><b>Truncation Error:</b> Caused by approximating a mathematical procedure (e.g., replacing an infinite series with a finite number of terms).</li>
+            <li><b>Round-off Error:</b> Arises when numbers are rounded to a limited precision.</li>
+            <li><b>Discretization Error:</b> Introduced when continuous functions are approximated with discrete values.</li>
+        </ul>
+    </div>
+
+    <h2>4. Accuracy</h2>
+    <div class="container">
+        <p><strong>Accuracy</strong> refers to how close a numerical solution is to the true value. A higher accuracy indicates that the solution is very close to the exact or real solution.</p>
+
+        <h3>Example of Accuracy:</h3>
+        <p>If we have a true value of <code>y = 5.2</code> and our numerical solution is <code>y = 5.3</code>, the accuracy is determined by the difference between these values: <code>5.3 - 5.2 = 0.1</code>.</p>
+    </div>
+
+    <h2>5. Precision</h2>
+    <div class="container">
+        <p><strong>Precision</strong> refers to the number of significant digits or decimal places used in a numerical calculation. A higher precision leads to more digits in the result, reducing the likelihood of round-off errors.</p>
+    </div>
+
+    <h2>6. Roundoff Error</h2>
+    <div class="roundoff-section">
+        <p><strong>Roundoff error</strong> occurs because computers can only store a finite number of digits. This limitation can cause small discrepancies when performing arithmetic operations, especially with large or very small numbers.</p>
+
+        <h3>Example of Roundoff Error:</h3>
+        <p>For example, when calculating <code>1/3</code>, the exact result is <code>0.333333...</code>, but computers may store it as <code>0.3333333</code>, introducing a small roundoff error.</p>
+
+        <button class="button" onclick="simulateRoundoff()">Simulate Roundoff Error</button>
+        <div id="roundoff-result"></div>
+    </div>
+
+    <script>
+        function solveEuler() {
+            const x0 = parseFloat(document.getElementById('euler-x0').value);
+            const y0 = parseFloat(document.getElementById('euler-y0').value);
+            const h = parseFloat(document.getElementById('euler-h').value);
+            const xmax = parseFloat(document.getElementById('euler-xmax').value);
+
+            let x = x0;
+            let y = y0;
+            let dataX = [x];
+            let dataY = [y];
+
+            while (x <= xmax) {
+                y = y + h * (x + y);
+                x = x + h;
+                dataX.push(x);
+                dataY.push(y);
+            }
+
+            let resultHtml = "<p>Numerical Solution using Euler's Method:</p><table><tr><th>x</th><th>y</th></tr>";
+            for (let i = 0; i < dataX.length; i++) {
+                resultHtml += `<tr><td>${dataX[i].toFixed(2)}</td><td>${dataY[i].toFixed(4)}</td></tr>`;
+            }
+            resultHtml += "</table>";
+            document.getElementById('euler-result').innerHTML = resultHtml;
+
+            createChart(dataX, dataY);
+        }
+
+        function createChart(dataX, dataY) {
+            var ctx = document.getElementById('euler-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dataX,
+                    datasets: [{
+                        label: 'Euler\'s Method Approximation',
+                        data: dataY,
+                        borderColor: 'blue',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'x'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'y'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function simulateRoundoff() {
+            const piApprox = 3.141592653589793;
+            const piRounded = piApprox.toFixed(5); // Round to 5 decimal places
+            document.getElementById('roundoff-result').innerHTML = `
+                <p>Original value of pi: ${piApprox}</p>
+                <p>Rounded value of pi: ${piRounded}</p>
+                <p>Roundoff error: ${Math.abs(piApprox - piRounded)}</p>
+            `;
+        }
+    </script>
+</body>
+</html>

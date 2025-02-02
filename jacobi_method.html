@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jacobi Method Solver</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #e1f5fe;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 0;
+      padding: 15px 0;
+      background-color: #007bff;
+      color: #fff;
+      border-bottom: 5px solid #0056b3;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #ffffff;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      border-radius: 8px;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-sizing: border-box;
+    }
+
+    button {
+      display: block;
+      width: 100%;
+      padding: 10px;
+      margin-top: 20px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #218838;
+    }
+
+    pre {
+      background: #f9f9f9;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+
+    .result-section {
+      background-color: #f1f8ff;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+
+    canvas {
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Jacobi Method Solver</h2>
+  <div class="container">
+    <form id="jacobiForm">
+      <label for="matrixA">Enter Matrix A (comma-separated rows):</label>
+      <input type="text" id="matrixA" placeholder="e.g., 4,-1,0,0; -1,4,-1,0; 0,-1,4,-1; 0,0,-1,3" required>
+
+      <label for="constants">Enter Constants (B column, comma-separated):</label>
+      <input type="text" id="constants" placeholder="e.g., 15,10,10,10" required>
+
+      <label for="tolerance">Enter Tolerance:</label>
+      <input type="number" step="0.000001" id="tolerance" placeholder="e.g., 0.000001" required>
+
+      <label for="maxIter">Enter Maximum Iterations:</label>
+      <input type="number" id="maxIter" placeholder="e.g., 100" required>
+
+      <button type="submit">Solve</button>
+    </form>
+
+    <div class="result-section" id="resultSection" style="display: none;">
+      <h3>Results</h3>
+      <pre id="resultOutput"></pre>
+      <canvas id="errorChart" width="400" height="200"></canvas>
+    </div>
+  </div>
+
+  <script>
+    function parseMatrix(input) {
+      return input.split(";").map(row => row.split(",").map(Number));
+    }
+
+    function jacobiMethod(matrixA, constants, tol, maxIter) {
+      const n = matrixA.length;
+      const x = new Array(n).fill(0); // Initial guess
+      const xOld = [...x];
+      const errors = [];
+
+      for (let iter = 0; iter < maxIter; iter++) {
+        for (let i = 0; i < n; i++) {
+          let sum = 0;
+          for (let j = 0; j < n; j++) {
+            if (i !== j) {
+              sum += matrixA[i][j] * xOld[j];
+            }
+          }
+          x[i] = (constants[i] - sum) / matrixA[i][i];
+        }
+
+        // Calculate relative error
+        const relativeError = Math.max(...x.map((xi, i) => Math.abs((xi - xOld[i]) / xi)));
+        errors.push(relativeError);
+
+        if (relativeError < tol) {
+          return { solution: x, errors };
+        }
+
+        // Update xOld
+        for (let i = 0; i < n; i++) {
+          xOld[i] = x[i];
+        }
+      }
+
+      throw new Error("Jacobi method did not converge within the maximum number of iterations.");
+    }
+
+    function plotError(errors) {
+      const ctx = document.getElementById("errorChart").getContext("2d");
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: Array.from({ length: errors.length }, (_, i) => i + 1),
+          datasets: [{
+            label: "Relative Error",
+            data: errors,
+            backgroundColor: "rgba(0, 123, 255, 0.2)",
+            borderColor: "#007bff",
+            borderWidth: 2,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: "Iteration",
+              },
+            },
+            y: {
+              title: {
+                display: true,
+                text: "Relative Error",
+              },
+              beginAtZero: true,
+            }
+          }
+        }
+      });
+    }
+
+    document.getElementById("jacobiForm").addEventListener("submit", function (e) {
+      e.preventDefault();
+
+      const matrixAInput = document.getElementById("matrixA").value.trim();
+      const constantsInput = document.getElementById("constants").value.trim();
+      const tolerance = parseFloat(document.getElementById("tolerance").value);
+      const maxIter = parseInt(document.getElementById("maxIter").value, 10);
+      const resultOutput = document.getElementById("resultOutput");
+      const resultSection = document.getElementById("resultSection");
+
+      try {
+        const matrixA = parseMatrix(matrixAInput);
+        const constants = constantsInput.split(",").map(Number);
+
+        if (matrixA.length !== constants.length) {
+          throw new Error("Matrix A and constants vector size mismatch.");
+        }
+
+        const { solution, errors } = jacobiMethod(matrixA, constants, tolerance, maxIter);
+
+        resultOutput.textContent = `Solution:\n${solution.map((xi, i) => `X${i + 1} = ${xi.toFixed(6)}`).join("\n")}`;
+        resultSection.style.display = "block";
+
+        // Plot relative errors
+        plotError(errors);
+      } catch (error) {
+        resultOutput.textContent = `Error: ${error.message}`;
+        resultSection.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

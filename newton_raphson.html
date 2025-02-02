@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Newton-Raphson Method</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f9;
+        }
+        .input-container, .output-container {
+            margin: 20px auto;
+            max-width: 800px;
+            text-align: left;
+        }
+        .input-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .input-container input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output-container {
+            padding: 20px;
+            background-color: white;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        canvas {
+            margin: 20px auto;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Newton-Raphson Method</h1>
+    <div class="input-container">
+        <label for="equation">Equation (e.g., x^3 - x - 2):</label>
+        <input type="text" id="equation" placeholder="Enter the equation">
+
+        <label for="derivative">Derivative (e.g., 3*x^2 - 1):</label>
+        <input type="text" id="derivative" placeholder="Enter the derivative of the equation">
+
+        <label for="initialGuess">Initial Guess:</label>
+        <input type="number" id="initialGuess" placeholder="Enter the initial guess">
+
+        <label for="tolerance">Error Tolerance:</label>
+        <input type="number" id="tolerance" step="0.0001" placeholder="Enter tolerance">
+
+        <button onclick="newtonRaphson()">Calculate</button>
+    </div>
+    <div class="output-container" id="output"></div>
+    <canvas id="graph" width="800" height="400"></canvas>
+
+    <script>
+        function evaluateEquation(eq, x) {
+            return Function('x', `return ${eq}`)(x);
+        }
+
+        function newtonRaphson() {
+            const equation = document.getElementById("equation").value;
+            const derivative = document.getElementById("derivative").value;
+            let x = parseFloat(document.getElementById("initialGuess").value);
+            const tolerance = parseFloat(document.getElementById("tolerance").value);
+
+            const output = document.getElementById("output");
+            const errorDataPoints = [];
+            const rootDataPoints = [];
+            let iteration = 0;
+            let relativeError;
+
+            output.innerHTML = "<strong>Iterations:</strong><br>";
+
+            while (true) {
+                const f_x = evaluateEquation(equation, x);
+                const f_prime_x = evaluateEquation(derivative, x);
+
+                if (f_prime_x === 0) {
+                    output.innerHTML += `<br><strong>Error:</strong> Derivative became zero. Stopping iteration.`;
+                    break;
+                }
+
+                const nextX = x - f_x / f_prime_x;
+                relativeError = Math.abs((nextX - x) / nextX) * 100;
+
+                // Save data points for visualization
+                errorDataPoints.push({ x: iteration + 1, y: relativeError });
+                rootDataPoints.push({ x: iteration + 1, y: nextX });
+
+                output.innerHTML += `Iteration ${++iteration}: x=${nextX.toFixed(6)}, f(x)=${f_x.toFixed(6)}, Relative Error=${relativeError.toFixed(4)}%<br>`;
+
+                if (relativeError <= tolerance) break;
+
+                x = nextX;
+            }
+
+            output.innerHTML += `<br><strong>Result:</strong> Root = ${x.toFixed(6)}, Relative Error = ${relativeError.toFixed(4)}%`;
+
+            // Plot graph
+            const ctx = document.getElementById("graph").getContext("2d");
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: errorDataPoints.map(dp => dp.x),
+                    datasets: [
+                        {
+                            label: 'Relative Error (%)',
+                            data: errorDataPoints.map(dp => dp.y),
+                            borderColor: 'blue',
+                            borderWidth: 2,
+                            fill: false,
+                        },
+                        {
+                            label: 'Root Values',
+                            data: rootDataPoints.map(dp => dp.y),
+                            borderColor: 'red',
+                            borderWidth: 2,
+                            fill: false,
+                            borderDash: [5, 5],
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { title: { display: true, text: 'Iterations' } },
+                        y: { title: { display: true, text: 'Value' } },
+                    },
+                },
+            });
+        }
+    </script>
+</body>
+</html>
