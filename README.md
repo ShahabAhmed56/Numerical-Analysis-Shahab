@@ -12,7 +12,6 @@ This is a web-based tool for learning and exploring various numerical analysis t
 
 ## Technologies Used
 - HTML, CSS(for styling), JS 
-- Flexbox for responsive layout  
 
 ## How to Use
 1. Clone the repository:  
