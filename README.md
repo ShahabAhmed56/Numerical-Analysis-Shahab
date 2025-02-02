@@ -17,4 +17,5 @@ This is a web-based tool for learning and exploring various numerical analysis t
 ## How to Use
 1. Clone the repository:  
    ```bash
-   git clone https://github.com/your-username/numerical-analysis-tool.git
+   git clone https://github.com/ShahabAhmed56/Numerical-Analysis-Shahab.git
+   
