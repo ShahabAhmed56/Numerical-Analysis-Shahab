@@ -1,0 +1,44 @@
+name: Auto merge staging -> main (after 5 minutes)
+
+on:
+  push:
+    branches:
+      - staging
+
+concurrency:
+  group: staging-to-main
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Wait 5 minutes
+        run: sleep 300
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "ShahabAhmed56"
+          git config user.email "saksmsng56@gmail.com"
+
+      - name: Fetch latest branches
+        run: |
+          git fetch origin main staging --prune
+
+      - name: Merge staging into main
+        run: |
+          git checkout -B main origin/main
+          git merge origin/staging --no-ff -m "Auto-merge staging -> main (after 5 min)"
+
+      - name: Push to main
+        run: |
+          git push origin main
