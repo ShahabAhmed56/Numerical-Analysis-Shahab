@@ -3,7 +3,7 @@ name: Merge staging -> main at 11:45 PM PKT (only if updated)
 on:
   schedule:
     # 11:45 PM PKT = 18:45 UTC (Pakistan is UTC+5)
-    - cron: "50 9 * * *"
+    - cron: "57 10 * * *"
   workflow_dispatch: {}
 
 concurrency:
