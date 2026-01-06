@@ -1,0 +1,45 @@
+name: Scheduled Merge staging -> main (23:45 UTC)
+
+on:
+  schedule:
+    - cron: "40 7 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scheduled-staging-to-main
+  cancel-in-progress: true
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main (full history)
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Fetch branches
+        run: |
+          git fetch origin main staging --prune
+
+      - name: Check if staging has new commits
+        id: check
+        run: |
+          ahead=$(git rev-list --count origin/main..origin/staging)
+          echo "ahead=$ahead"
+          if [ "$ahead" -gt 0 ]; then
+            echo "do_merge=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "do_merge=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Merge staging into main
+        if: steps.check.outputs.do_merge == 'true'
+        run: |
+          git checkout -B main origin/main
+          git merge origin/staging --no-ff -m "Scheduled merge staging -> main (23:45 UTC)"
+          git push origin main
